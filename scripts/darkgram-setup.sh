@@ -11,7 +11,7 @@ trap 'fail "Шаг не удался. Текст ошибки выше — пр�
 
 [ "$(uname -s)" = "Darwin" ] || fail "Скрипт только для macOS."
 
-say "1/7 проверяю Homebrew"
+say "1/8 проверяю Homebrew"
 if ! command -v brew >/dev/null 2>&1 && [ -x /opt/homebrew/bin/brew ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
@@ -23,7 +23,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 brew --version | awk 'NR==1'
 
-say "2/7 проверяю Rust"
+say "2/8 проверяю Rust"
 if ! command -v cargo >/dev/null 2>&1 && [ -f "$HOME/.cargo/env" ]; then
   . "$HOME/.cargo/env"
 fi
@@ -33,11 +33,11 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 cargo --version
 
-say "3/7 настраиваю git для подмодулей"
+say "3/8 настраиваю git для подмодулей"
 git config --global url."https://github.com/".insteadOf "git@github.com:"
 git config --global url."https://gitlab.com/".insteadOf "git@gitlab.com:"
 
-say "4/7 клонирую репозиторий с подмодулями"
+say "4/8 клонирую репозиторий с подмодулями"
 if [ -d "$TARGET/.git" ]; then
   git -C "$TARGET" submodule update --init --recursive
 else
@@ -45,9 +45,10 @@ else
 fi
 cd "$TARGET"
 git checkout "$BRANCH"
+git pull --ff-only origin "$BRANCH"
 [ -f "Telegram-Mac.xcworkspace/contents.xcworkspacedata" ] || fail "В клоне нет Telegram-Mac.xcworkspace"
 
-say "5/7 проверяю Xcode"
+say "5/8 проверяю Xcode"
 XCODE_APP="/Applications/Xcode.app/Contents/Developer"
 [ -d "$XCODE_APP" ] || fail "Не нашёл Xcode в /Applications. Поставь Xcode из App Store и запусти скрипт снова."
 CURRENT_DEV="$(xcode-select -p 2>/dev/null || true)"
@@ -68,10 +69,18 @@ else
   echo "Патч для Xcode 27 не нужен."
 fi
 
-say "6/7 ставлю зависимости и собираю нативные библиотеки (долго)"
+say "6/8 проверяю Metal toolchain"
+if [ "$(xcodebuild -showComponent MetalToolchain 2>/dev/null || true)" != *"Status: installed"* ]; then
+  echo "Скачиваю Metal toolchain — несколько ГБ, один раз, займёт время. Пароль может понадобиться."
+  xcodebuild -downloadComponent MetalToolchain
+  [ "$(xcodebuild -showComponent MetalToolchain 2>/dev/null || true)" = *"Status: installed"* ] || fail "Metal toolchain не встал."
+fi
+echo "Metal toolchain на месте."
+
+say "7/8 ставлю зависимости и собираю нативные библиотеки (долго)"
 sh scripts/setup_build_env.sh --build
 
-say "7/7 открываю Xcode"
+say "8/8 открываю Xcode"
 open "Telegram-Mac.xcworkspace"
 
 printf '\nГотово. В Xcode слева выбери схему Telegram и нажми Command+R.\n'
