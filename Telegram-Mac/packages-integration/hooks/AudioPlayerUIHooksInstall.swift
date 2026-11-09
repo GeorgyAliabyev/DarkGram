@@ -7,7 +7,7 @@ import AudioPlayerUI
 import AudioPlayerCore
 import InAppSettings
 import Localization
-import KeyboardKey
+import SettingsUI
 
 extension InstantVideoPIP: @retroactive InlineAudioPlayerInstantVideoPIP {
 
@@ -70,49 +70,53 @@ private func darkGramAdjustRate(_ controller: APController, by delta: Double) {
     darkGramAnnounce("\(strings().voiceOverCommonPlaybackSpeed) \(String(format: "%.2fx", rate))")
 }
 
+private func darkGramPlayerShortcutHandler(_ event: NSEvent) -> NSEvent? {
+    guard let action = DarkGramHotkeys.shared.action(for: event) else {
+        return event
+    }
+    guard let context = appDelegate?.currentContext else {
+        return event
+    }
+    if action == .closePlayer {
+        guard context.sharedContext.getAudioPlayer() != nil else {
+            return event
+        }
+        context.sharedContext.endInlinePlayer(animated: true)
+        return nil
+    }
+    guard let controller = context.sharedContext.getAudioPlayer() else {
+        return event
+    }
+    guard !darkGramIsEditingText(event) else {
+        return event
+    }
+    switch action {
+    case .closePlayer:
+        return event
+    case .playPause:
+        let wasPlaying = darkGramIsPlaying(controller)
+        if controller.playOrPause() {
+            darkGramAnnounce(wasPlaying ? strings().voiceOverCommonPause : strings().voiceOverCommonPlay)
+        }
+        return nil
+    case .seekBackward:
+        darkGramSeek(controller, by: -5)
+        return nil
+    case .seekForward:
+        darkGramSeek(controller, by: 5)
+        return nil
+    case .speedUp:
+        darkGramAdjustRate(controller, by: 0.25)
+        return nil
+    case .speedDown:
+        darkGramAdjustRate(controller, by: -0.25)
+        return nil
+    }
+}
+
 private func installDarkGramPlayerShortcuts() {
     _ = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
-        if event.keyCode == 118 {
-            guard let context = appDelegate?.currentContext, context.sharedContext.getAudioPlayer() != nil else {
-                return event
-            }
-            context.sharedContext.endInlinePlayer(animated: true)
-            return nil
-        }
-        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
-        guard flags == .option else {
-            return event
-        }
-        guard let context = appDelegate?.currentContext, let controller = context.sharedContext.getAudioPlayer() else {
-            return event
-        }
-        if event.keyCode == KeyboardKey.E.rawValue {
-            context.sharedContext.endInlinePlayer(animated: true)
-            return nil
-        }
-        guard !darkGramIsEditingText(event) else {
-            return event
-        }
-        if event.keyCode == KeyboardKey.P.rawValue {
-            let wasPlaying = darkGramIsPlaying(controller)
-            if controller.playOrPause() {
-                darkGramAnnounce(wasPlaying ? strings().voiceOverCommonPause : strings().voiceOverCommonPlay)
-            }
-            return nil
-        } else if event.keyCode == KeyboardKey.LeftArrow.rawValue {
-            darkGramSeek(controller, by: -5)
-            return nil
-        } else if event.keyCode == KeyboardKey.RightArrow.rawValue {
-            darkGramSeek(controller, by: 5)
-            return nil
-        } else if event.keyCode == KeyboardKey.UpArrow.rawValue {
-            darkGramAdjustRate(controller, by: 0.25)
-            return nil
-        } else if event.keyCode == KeyboardKey.DownArrow.rawValue {
-            darkGramAdjustRate(controller, by: -0.25)
-            return nil
-        }
-        return event
+        return darkGramPlayerShortcutHandler(event)
     })
 }
 

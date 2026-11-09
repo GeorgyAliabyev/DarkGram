@@ -15990,6 +15990,26 @@ public final class L10n {
   public static var shortcutsControllerChatSearchMessages: String  { return L10n.tr("Localizable", "ShortcutsController.Chat.SearchMessages") }
   /// Select Message To Reply
   public static var shortcutsControllerChatSelectMessageToReply: String  { return L10n.tr("Localizable", "ShortcutsController.Chat.SelectMessageToReply") }
+  /// Close Player
+  public static var shortcutsControllerDarkGramClosePlayer: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.ClosePlayer") }
+  /// Press a new key combination, Escape to cancel
+  public static var shortcutsControllerDarkGramPressKeys: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.PressKeys") }
+  /// Pause / Play
+  public static var shortcutsControllerDarkGramPlayPause: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.PlayPause") }
+  /// Assigned
+  public static var shortcutsControllerDarkGramRecorded: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.Recorded") }
+  /// Reset All Shortcuts
+  public static var shortcutsControllerDarkGramReset: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.Reset") }
+  /// Back 5 Seconds
+  public static var shortcutsControllerDarkGramSeekBackward: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.SeekBackward") }
+  /// Forward 5 Seconds
+  public static var shortcutsControllerDarkGramSeekForward: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.SeekForward") }
+  /// Slower
+  public static var shortcutsControllerDarkGramSpeedDown: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.SpeedDown") }
+  /// Faster
+  public static var shortcutsControllerDarkGramSpeedUp: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.SpeedUp") }
+  /// Player
+  public static var shortcutsControllerDarkGramTitle: String  { return L10n.tr("Localizable", "ShortcutsController.DarkGram.Title") }
   /// Chat List Actions
   public static var shortcutsControllerGesturesChatAction: String  { return L10n.tr("Localizable", "ShortcutsController.Gestures.ChatAction") }
   /// Navigation Back

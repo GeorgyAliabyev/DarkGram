@@ -12,17 +12,66 @@ import FoundationUtils
 import TelegramCore
 import Postbox
 
-private func shortcutEntires() -> [InputDataEntry] {
+private func darkGramHotkeyEntry(sectionId: Int32, index: Int32, action: DarkGramHotkeyAction, title: String, viewType: GeneralViewType, onChange: @escaping () -> Void) -> InputDataEntry {
+    let data = InputDataGeneralData(name: title, color: theme.colors.text, icon: nil, type: .context(DarkGramHotkeys.shared.displayString(for: action)), viewType: viewType, enabled: true, description: nil, action: {
+        darkGramHotkeyAnnounce(strings().shortcutsControllerDarkGramPressKeys)
+        darkGramHotkeyRecord { binding in
+            guard let binding = binding else {
+                return
+            }
+            DarkGramHotkeys.shared.add(binding, for: action)
+            darkGramHotkeyAnnounce("\(strings().shortcutsControllerDarkGramRecorded): \(binding.display)")
+            onChange()
+        }
+    })
+    return .general(sectionId: sectionId, index: index, value: .none, error: nil, identifier: InputDataIdentifier("darkgram_hotkey_\(action.rawValue)"), data: data)
+}
+
+private func shortcutEntires(onChange: @escaping () -> Void) -> [InputDataEntry] {
     var entries:[InputDataEntry] = []
-    
+
     var sectionId:Int32 = 0
     var index: Int32 = 0
-    
+
     entries.append(.sectionId(sectionId, type: .normal))
     sectionId += 1
-    
+
+    // darkgram player
+
+    entries.append(.desc(sectionId: sectionId, index: index, text: .plain(strings().shortcutsControllerDarkGramTitle), data: .init(color: theme.colors.listGrayText, viewType: .textTopItem)))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .closePlayer, title: strings().shortcutsControllerDarkGramClosePlayer, viewType: .firstItem, onChange: onChange))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .playPause, title: strings().shortcutsControllerDarkGramPlayPause, viewType: .innerItem, onChange: onChange))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .seekBackward, title: strings().shortcutsControllerDarkGramSeekBackward, viewType: .innerItem, onChange: onChange))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .seekForward, title: strings().shortcutsControllerDarkGramSeekForward, viewType: .innerItem, onChange: onChange))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .speedUp, title: strings().shortcutsControllerDarkGramSpeedUp, viewType: .innerItem, onChange: onChange))
+    index += 1
+
+    entries.append(darkGramHotkeyEntry(sectionId: sectionId, index: index, action: .speedDown, title: strings().shortcutsControllerDarkGramSpeedDown, viewType: .innerItem, onChange: onChange))
+    index += 1
+
+    let resetData = InputDataGeneralData(name: strings().shortcutsControllerDarkGramReset, color: theme.colors.accent, icon: nil, type: .none, viewType: .lastItem, enabled: true, description: nil, action: {
+        DarkGramHotkeys.shared.resetAll()
+        darkGramHotkeyAnnounce(strings().shortcutsControllerDarkGramReset)
+        onChange()
+    })
+    entries.append(.general(sectionId: sectionId, index: index, value: .none, error: nil, identifier: InputDataIdentifier("darkgram_hotkeys_reset"), data: resetData))
+    index += 1
+
+    entries.append(.sectionId(sectionId, type: .normal))
+    sectionId += 1
+
     // chat
-    
+
     entries.append(.desc(sectionId: sectionId, index: index, text: .plain(strings().shortcutsControllerChat), data: .init(color: theme.colors.listGrayText, viewType: .textTopItem)))
     index += 1
     
@@ -159,8 +208,17 @@ private func shortcutEntires() -> [InputDataEntry] {
 }
 
 public func ShortcutListController(context: any AccountContextProtocol) -> ViewController {
-    
-    let controller = InputDataController(dataSignal: .single(InputDataSignalValue(entries: shortcutEntires())), title: strings().shortcutsControllerTitle, validateData: { data in
+    let promise = ValuePromise<[InputDataEntry]>([])
+
+    func currentEntries() -> [InputDataEntry] {
+        return shortcutEntires(onChange: {
+            promise.set(currentEntries())
+        })
+    }
+
+    promise.set(currentEntries())
+
+    let controller = InputDataController(dataSignal: promise.get() |> map { InputDataSignalValue(entries: $0) }, title: strings().shortcutsControllerTitle, validateData: { data in
         return .fail(.none)
     }, removeAfterDisappear: true, hasDone: false, identifier: "shortcuts")
     
