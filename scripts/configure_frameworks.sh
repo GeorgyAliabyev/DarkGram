@@ -59,8 +59,28 @@ do
     rm -f "$STAMP_FILE"
 
     PROJECT_DIR="$(framework_project_dir "$ROOT_DIR" "$LIB")"
+
+    # Rust crates build inside an Xcode Run Script phase, which does not inherit
+    # the shell environment. A build setting does reach the phase, so the pinned
+    # interpreter is passed as RUSTC and cargo uses it for every crate — with a
+    # second Rust install on the machine cargo would otherwise mix versions.
+    RUSTC_ARG=""
+    case "$LIB" in
+        wallet-engine) RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/wallet-engine/wallet-engine" ;;
+        mtproto-engine) RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/mtproto-engine" ;;
+        *) RUST_SRC="" ;;
+    esac
+    if [ -n "$RUST_SRC" ] && [ -f "$RUST_SRC/rust-toolchain.toml" ] && command -v rustup >/dev/null 2>&1; then
+        PINNED_RUSTC="$(cd "$RUST_SRC" && rustup which rustc 2>/dev/null || true)"
+        if [ -n "$PINNED_RUSTC" ] && [ -x "$PINNED_RUSTC" ]; then
+            RUSTC_ARG="RUSTC=$PINNED_RUSTC"
+            echo "rust-pin: $LIB uses $("$PINNED_RUSTC" --version)"
+        fi
+    fi
+
     sh "$ROOT_DIR/scripts/time-step.sh" "framework-$LIB" \
         xcrun xcodebuild build \
+        ${RUSTC_ARG:+"$RUSTC_ARG"} \
         -project "$PROJECT_DIR/$FWNAME.xcodeproj" \
         -configuration Release BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         -scheme "$FWNAME" \
