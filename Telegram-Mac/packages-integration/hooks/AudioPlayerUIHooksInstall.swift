@@ -5,9 +5,108 @@ import Postbox
 import SwiftSignalKit
 import AudioPlayerUI
 import AudioPlayerCore
+import InAppSettings
+import Localization
+import KeyboardKey
 
 extension InstantVideoPIP: @retroactive InlineAudioPlayerInstantVideoPIP {
 
+}
+
+private func darkGramFormattedTime(_ time: TimeInterval) -> String {
+    let total = max(0, Int(time))
+    let hours = total / 3600
+    let minutes = total / 60 % 60
+    let seconds = total % 60
+    if hours > 0 {
+        return String(format: "%d:%02d:%02d", hours, minutes, seconds)
+    }
+    return String(format: "%d:%02d", minutes, seconds)
+}
+
+private func darkGramAnnounce(_ text: String) {
+    guard NSWorkspace.shared.isVoiceOverEnabled else {
+        return
+    }
+    NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested, userInfo: [
+        .announcement: text,
+        .priority: NSAccessibilityPriorityLevel.high.rawValue
+    ])
+}
+
+private func darkGramIsEditingText(_ event: NSEvent) -> Bool {
+    guard let responder = event.window?.firstResponder else {
+        return false
+    }
+    let name = String(describing: responder)
+    return name.contains("TextView") || name.contains("TextField")
+}
+
+private func darkGramIsPlaying(_ controller: APController) -> Bool {
+    if case .playing = controller.state.status {
+        return true
+    }
+    return false
+}
+
+private func darkGramSeek(_ controller: APController, by delta: TimeInterval) {
+    let target = min(max(controller.currentTime + delta, 0), max(controller.duration, 0))
+    guard controller.set(seek: target) else {
+        return
+    }
+    darkGramAnnounce(darkGramFormattedTime(target))
+}
+
+private func darkGramAdjustRate(_ controller: APController, by delta: Double) {
+    let isMusic = controller is APChatMusicController
+    let current = isMusic ? FastSettings.playingMusicRate : FastSettings.playingRate
+    let rate = min(max(((current + delta) * 100).rounded() / 100, 0.5), 2.5)
+    if isMusic {
+        FastSettings.setPlayingMusicRate(rate)
+    } else {
+        FastSettings.setPlayingRate(rate)
+    }
+    controller.baseRate = rate
+    darkGramAnnounce("\(strings().voiceOverCommonPlaybackSpeed) \(String(format: "%.2fx", rate))")
+}
+
+private func installDarkGramPlayerShortcuts() {
+    _ = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
+        let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        guard flags == .option else {
+            return event
+        }
+        guard let context = appDelegate?.currentContext, let controller = context.sharedContext.getAudioPlayer() else {
+            return event
+        }
+        if event.keyCode == KeyboardKey.E.rawValue {
+            context.sharedContext.endInlinePlayer(animated: true)
+            return nil
+        }
+        guard !darkGramIsEditingText(event) else {
+            return event
+        }
+        if event.keyCode == KeyboardKey.P.rawValue {
+            let wasPlaying = darkGramIsPlaying(controller)
+            if controller.playOrPause() {
+                darkGramAnnounce(wasPlaying ? strings().voiceOverCommonPause : strings().voiceOverCommonPlay)
+            }
+            return nil
+        } else if event.keyCode == KeyboardKey.LeftArrow.rawValue {
+            darkGramSeek(controller, by: -5)
+            return nil
+        } else if event.keyCode == KeyboardKey.RightArrow.rawValue {
+            darkGramSeek(controller, by: 5)
+            return nil
+        } else if event.keyCode == KeyboardKey.UpArrow.rawValue {
+            darkGramAdjustRate(controller, by: 0.25)
+            return nil
+        } else if event.keyCode == KeyboardKey.DownArrow.rawValue {
+            darkGramAdjustRate(controller, by: -0.25)
+            return nil
+        }
+        return event
+    })
 }
 
 func installAudioPlayerUIHooks() {
@@ -67,4 +166,6 @@ func installAudioPlayerUIHooks() {
     }, focusSearch: { context, text in
         context.bindings.mainViewController.focusSearch(animated: true, text: text)
     }))
+
+    installDarkGramPlayerShortcuts()
 }

@@ -585,7 +585,9 @@ public class InlineAudioPlayerView: NavigationHeaderView, APDelegate {
             progressView.style = fetchProgressStyle
             progressView.set(progress: CGFloat(progress.isFinite ? min(max(progress, 0), 1) : 0), animated: animated)
         }
-        
+
+        progressView.setAccessibilityValue("\(formattedDuration(controller.currentTime)) / \(formattedDuration(controller.duration))")
+
         switch controller.state.status {
         case .playing:
             playPause.setAccessibilityLabel(strings().voiceOverCommonPause)
