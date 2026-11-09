@@ -21,7 +21,7 @@ if ! command -v brew >/dev/null 2>&1; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
   echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
 fi
-brew --version | head -1
+brew --version | awk 'NR==1'
 
 say "2/7 проверяю Rust"
 if ! command -v cargo >/dev/null 2>&1 && [ -f "$HOME/.cargo/env" ]; then
@@ -48,10 +48,18 @@ git checkout "$BRANCH"
 [ -f "Telegram-Mac.xcworkspace/contents.xcworkspacedata" ] || fail "В клоне нет Telegram-Mac.xcworkspace"
 
 say "5/7 проверяю Xcode"
-XCODE_VERSION="$(xcodebuild -version 2>/dev/null | head -1 | awk '{print $2}')"
+XCODE_APP="/Applications/Xcode.app/Contents/Developer"
+[ -d "$XCODE_APP" ] || fail "Не нашёл Xcode в /Applications. Поставь Xcode из App Store и запусти скрипт снова."
+CURRENT_DEV="$(xcode-select -p 2>/dev/null || true)"
+if [ "$CURRENT_DEV" != "$XCODE_APP" ]; then
+  echo "Активный Xcode сейчас: ${CURRENT_DEV:-не задан}. Переключаю на Xcode — понадобится пароль от Mac."
+  sudo xcode-select --switch "$XCODE_APP"
+fi
+XCODE_RAW="$(xcodebuild -version 2>&1 || true)"
+XCODE_VERSION="$(printf '%s\n' "$XCODE_RAW" | awk 'NR==1{print $2}')"
 XCODE_MAJOR="${XCODE_VERSION%%.*}"
 case "$XCODE_MAJOR" in
-  ''|*[!0-9]*) fail "Не удалось определить версию Xcode (xcode-select переключён на Xcode?)" ;;
+  ''|*[!0-9]*) fail "xcodebuild не отвечает версией. Ответ: $XCODE_RAW" ;;
 esac
 echo "Xcode $XCODE_VERSION"
 if [ "$XCODE_MAJOR" -ge 27 ]; then
