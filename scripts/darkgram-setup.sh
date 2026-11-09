@@ -70,10 +70,21 @@ else
 fi
 
 say "6/8 проверяю Metal toolchain"
-if [ "$(xcodebuild -showComponent MetalToolchain 2>/dev/null || true)" != *"Status: installed"* ]; then
+metal_status() { xcodebuild -showComponent MetalToolchain 2>&1 || true; }
+if [[ "$(metal_status)" != *"Status: installed"* ]]; then
   echo "Скачиваю Metal toolchain — несколько ГБ, один раз, займёт время. Пароль может понадобиться."
   xcodebuild -downloadComponent MetalToolchain
-  [ "$(xcodebuild -showComponent MetalToolchain 2>/dev/null || true)" = *"Status: installed"* ] || fail "Metal toolchain не встал."
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if [[ "$(metal_status)" == *"Status: installed"* ]]; then
+      break
+    fi
+    sleep 3
+  done
+fi
+METAL_STATUS="$(metal_status)"
+printf '%s\n' "$METAL_STATUS"
+if [[ "$METAL_STATUS" != *"Status: installed"* ]]; then
+  fail "Metal toolchain не встал."
 fi
 echo "Metal toolchain на месте."
 
