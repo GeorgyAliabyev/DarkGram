@@ -72,6 +72,13 @@ private func darkGramAdjustRate(_ controller: APController, by delta: Double) {
 
 private func installDarkGramPlayerShortcuts() {
     _ = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
+        if event.keyCode == 118 {
+            guard let context = appDelegate?.currentContext, context.sharedContext.getAudioPlayer() != nil else {
+                return event
+            }
+            context.sharedContext.endInlinePlayer(animated: true)
+            return nil
+        }
         let flags = event.modifierFlags.intersection([.command, .option, .control, .shift])
         guard flags == .option else {
             return event
