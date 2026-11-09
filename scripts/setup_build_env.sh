@@ -156,6 +156,24 @@ next run will SKIP it. To force a clean rebuild, set scripts/rebuild to "yes"
 (or delete the relevant core-xprojects/*/build dirs).
 EOF
 
+# wallet-engine is a Rust crate and cargo takes `rustc` from PATH. With a second
+# Rust install on the machine (Homebrew) a proc-macro gets compiled by one
+# version and its consumer by another — "can't find crate for zeroize_derive".
+# Pin the toolchain the crate declares so cargo and rustc always match.
+WALLET_DIR="$REPO_DIR/submodules/telegram-ios/third-party/wallet-engine/wallet-engine"
+if [ -f "$WALLET_DIR/rust-toolchain.toml" ] && command -v rustup >/dev/null 2>&1; then
+  RUSTC_REAL="$(cd "$WALLET_DIR" && rustup which rustc 2>/dev/null || true)"
+  if [ -n "${RUSTC_REAL:-}" ] && [ -x "$RUSTC_REAL" ]; then
+    export RUSTC="$RUSTC_REAL"
+    export RUSTDOC="$(dirname "$RUSTC_REAL")/rustdoc"
+    export RUSTUP_TOOLCHAIN="$(basename "$(dirname "$(dirname "$RUSTC_REAL")")")"
+    export PATH="$(dirname "$RUSTC_REAL"):$PATH"
+    log "Rust toolchain pinned: $("$RUSTC_REAL" --version)"
+  else
+    warn "rustup did not resolve a rustc for wallet-engine; leaving PATH as is."
+  fi
+fi
+
 if [ "${1:-}" = "--build" ]; then
   log "Building frameworks (configure_frameworks.sh)"
   DEVELOPER_DIR="$XCODE_DEVELOPER_DIR" \
