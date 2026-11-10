@@ -65,9 +65,20 @@ do
     # interpreter is passed as RUSTC and cargo uses it for every crate — with a
     # second Rust install on the machine cargo would otherwise mix versions.
     RUSTC_ARG=""
+    PINNED_RUSTC=""
+    RUST_SCRIPT=""
+    RUST_OUT_PACKAGE=""
     case "$LIB" in
-        wallet-engine) RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/wallet-engine/wallet-engine" ;;
-        mtproto-engine) RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/mtproto-engine" ;;
+        wallet-engine)
+            RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/wallet-engine/wallet-engine"
+            RUST_SCRIPT="$ROOT_DIR/core-xprojects/wallet-engine/wallet-engine/build.sh"
+            RUST_OUT_PACKAGE="$ROOT_DIR/packages/WalletEngine"
+            ;;
+        mtproto-engine)
+            RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/mtproto-engine"
+            RUST_SCRIPT="$ROOT_DIR/core-xprojects/mtproto-engine/mtproto-engine/build.sh"
+            RUST_OUT_PACKAGE="$ROOT_DIR/submodules/telegram-ios/submodules/MTProtoRustEngine"
+            ;;
         *) RUST_SRC="" ;;
     esac
     if [ -n "$RUST_SRC" ] && [ -f "$RUST_SRC/rust-toolchain.toml" ] && command -v rustup >/dev/null 2>&1; then
@@ -76,6 +87,16 @@ do
             RUSTC_ARG="RUSTC=$PINNED_RUSTC"
             echo "rust-pin: $LIB uses $("$PINNED_RUSTC" --version)"
         fi
+    fi
+
+    # The Rust crates build inside an Xcode Run Script phase, and a nested cargo
+    # subprocess there ends up on a second Rust install even when PATH and RUSTC
+    # name the pinned one. The same build.sh run from this shell with the pinned
+    # toolchain first in PATH completes in seconds, so build it here; the Xcode
+    # phase then sees its outputs and does nothing.
+    if [ -n "$RUST_SCRIPT" ] && [ -x "$RUST_SCRIPT" ] && [ -n "$PINNED_RUSTC" ]; then
+        echo "rust-shell-build: building $LIB here with $("$PINNED_RUSTC" --version)"
+        PATH="$(dirname "$PINNED_RUSTC"):$PATH" sh "$RUST_SCRIPT" "$RUST_SRC" "$BUILD_DIR" "$RUST_OUT_PACKAGE"
     fi
 
     sh "$ROOT_DIR/scripts/time-step.sh" "framework-$LIB" \
