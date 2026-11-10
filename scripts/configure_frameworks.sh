@@ -68,6 +68,7 @@ do
     PINNED_RUSTC=""
     RUST_SCRIPT=""
     RUST_OUT_PACKAGE=""
+    DEPLOYMENT_ARG=""
     case "$LIB" in
         wallet-engine)
             RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/wallet-engine/wallet-engine"
@@ -78,6 +79,7 @@ do
             RUST_SRC="$ROOT_DIR/submodules/telegram-ios/third-party/mtproto-engine"
             RUST_SCRIPT="$ROOT_DIR/core-xprojects/mtproto-engine/mtproto-engine/build.sh"
             RUST_OUT_PACKAGE="$ROOT_DIR/submodules/telegram-ios/submodules/MTProtoRustEngine"
+            DEPLOYMENT_ARG="MACOSX_DEPLOYMENT_TARGET=12.0"
             ;;
         *) RUST_SRC="" ;;
     esac
@@ -102,6 +104,7 @@ do
     sh "$ROOT_DIR/scripts/time-step.sh" "framework-$LIB" \
         xcrun xcodebuild build \
         ${RUSTC_ARG:+"$RUSTC_ARG"} \
+        ${DEPLOYMENT_ARG:+"$DEPLOYMENT_ARG"} \
         -project "$PROJECT_DIR/$FWNAME.xcodeproj" \
         -configuration Release BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
         -scheme "$FWNAME" \
