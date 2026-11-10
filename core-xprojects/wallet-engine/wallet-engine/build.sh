@@ -29,6 +29,15 @@ SOURCE_DIR="$(cd "$SOURCE_DIR" && pwd)"
 BUILD_DIR="$(cd "$BUILD_DIR" && pwd)"
 PACKAGE_DIR="$(cd "$PACKAGE_DIR" && pwd)"
 
+if [ -f "$SOURCE_DIR/rust-toolchain.toml" ] && command -v rustup >/dev/null 2>&1; then
+    PINNED_RUSTC="$(cd "$SOURCE_DIR" && rustup which rustc 2>/dev/null || true)"
+    if [ -n "$PINNED_RUSTC" ] && [ -x "$PINNED_RUSTC" ]; then
+        PATH="$(dirname "$PINNED_RUSTC"):$PATH"
+        export PATH
+        echo "wallet-engine: Rust toolchain pinned to $("$PINNED_RUSTC" --version)"
+    fi
+fi
+
 if [ -n "${CARGO:-}" ]; then
     CARGO_BIN="$CARGO"
 elif command -v cargo >/dev/null 2>&1; then
