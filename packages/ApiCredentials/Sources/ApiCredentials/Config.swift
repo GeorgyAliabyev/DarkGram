@@ -18,10 +18,21 @@ public final class ApiEnvironment {
     
     
     public static var containerURL: URL? {
+        let fileManager = FileManager.default
         let appGroupName = ApiEnvironment.group
-        let containerUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)?.appendingPathComponent(prefix)
-        if let containerUrl = containerUrl {
-            try? FileManager.default.createDirectory(at: containerUrl, withIntermediateDirectories: true, attributes: nil)
+        if let groupUrl = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) {
+            let containerUrl = groupUrl.appendingPathComponent(prefix)
+            try? fileManager.createDirectory(at: containerUrl, withIntermediateDirectories: true, attributes: nil)
+            if fileManager.isWritableFile(atPath: containerUrl.path) {
+                return containerUrl
+            }
+        }
+        guard let supportUrl = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let containerUrl = supportUrl.appendingPathComponent(Bundle.main.bundleIdentifier ?? "Telegram").appendingPathComponent(prefix)
+        try? fileManager.createDirectory(at: containerUrl, withIntermediateDirectories: true, attributes: nil)
+        if fileManager.isWritableFile(atPath: containerUrl.path) {
             return containerUrl
         }
         return nil
