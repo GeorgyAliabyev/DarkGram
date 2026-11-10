@@ -400,7 +400,7 @@ public class FastSettings {
     }
 
     public static var accessibilityTreeEffective: Bool {
-        return accessibilityTreeEnabled && !accessibilityServerDisabled
+        return accessibilityTreeEnabled
     }
 
     public static var canViewPeerId: Bool {

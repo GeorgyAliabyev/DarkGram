@@ -691,12 +691,7 @@ final class AccountContext {
             _ = appConfiguration.swap(configuration)
             LottieBackend.update(appConfiguration: configuration)
             #if !SHARE
-            let flag = configuration.data?["macos_accessibility_disabled"]
-            let disabled = (flag as? Bool) ?? ((flag as? Double).map { $0 != 0 } ?? false)
             DispatchQueue.main.async {
-                if FastSettings.accessibilityServerDisabled != disabled {
-                    FastSettings.accessibilityServerDisabled = disabled
-                }
                 TGUIKitAccessibility.isEnabled = FastSettings.accessibilityTreeEffective
             }
             #endif
