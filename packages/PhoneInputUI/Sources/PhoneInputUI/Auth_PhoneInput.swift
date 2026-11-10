@@ -191,7 +191,9 @@ public final class Auth_PhoneInput: View, NSTextFieldDelegate {
         
         codeText.stringValue = "+"
         codeText.font = .code(.title)
+        codeText.setAccessibilityLabel(strings().voiceOverLoginPhoneCountryCode)
         numberText.font = .code(.title)
+        numberText.setAccessibilityLabel(strings().voiceOverLoginPhoneNumber)
         
         numberText.isBordered = false
         numberText.isBezeled = false

@@ -631,7 +631,29 @@ open class Control: View {
         if let tooltip = toolTip, !tooltip.isEmpty {
             return tooltip
         }
-        return accessibilityDefaultLabel
+        if let label = accessibilityDefaultLabel, !label.isEmpty {
+            return label
+        }
+        if accessibilityRole() == .group {
+            return nil
+        }
+        return accessibilityDerivedTextLabel
+    }
+
+    private var accessibilityDerivedTextLabel: String? {
+        var stack: [NSView] = subviews.reversed()
+        var steps = 0
+        while let view = stack.popLast(), steps < 512 {
+            steps += 1
+            if view.isHidden || view.alphaValue <= 0 {
+                continue
+            }
+            if let text = (view as? TextView)?.textLayout?.attributedString.string.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty {
+                return text
+            }
+            stack.append(contentsOf: view.subviews.reversed())
+        }
+        return nil
     }
 
     open override func isAccessibilityEnabled() -> Bool {
