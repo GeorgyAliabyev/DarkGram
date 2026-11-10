@@ -624,6 +624,24 @@ class TGFlipableTableView : NSTableView, CALayerDelegate {
         return result
     }
 
+    public func accessibilityFocus(item: TableRowItem) {
+        guard TGUIKitAccessibility.isEnabled, NSWorkspace.shared.isVoiceOverEnabled else {
+            return
+        }
+        guard let view = item.view, !view.isHidden else {
+            return
+        }
+        let element: Any
+        if view.isAccessibilityElement() {
+            element = view
+        } else if let first = NSAccessibility.unignoredChildren(from: [view]).first {
+            element = first
+        } else {
+            return
+        }
+        NSAccessibility.post(element: self.tableView, notification: .layoutChanged, userInfo: [.uiElements: [element]])
+    }
+
     func accessibilityRowViews() -> [TableRowView] {
         let range = rows(in: visibleRect)
         guard range.location != NSNotFound, range.length > 0 else {

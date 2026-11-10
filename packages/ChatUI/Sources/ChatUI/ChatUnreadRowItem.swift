@@ -48,6 +48,22 @@ public class ChatUnreadRowItem: ChatRowItem {
     public override var instantlyResize: Bool {
         return true
     }
+
+    public override var accessibilityHasContent: Bool {
+        return true
+    }
+
+    public override var accessibilityRole: NSAccessibility.Role? {
+        return .staticText
+    }
+
+    public override var accessibilityLabel: String? {
+        return strings().messagesUnreadMark
+    }
+
+    public override func accessibilityPerformPress() -> Bool {
+        return false
+    }
     
     public override func viewClass() -> AnyClass {
         return ChatUnreadRowView.self

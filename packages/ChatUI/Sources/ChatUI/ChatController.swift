@@ -10832,8 +10832,58 @@ open class ChatController<Context: AccountContextProtocol>: TelegramGenericViewC
     
 
     
+    private var accessibilityInitialFocusDone: Bool = false
+
+    private func accessibilityFocusInitialRow() {
+        guard TGUIKitAccessibility.isEnabled, NSWorkspace.shared.isVoiceOverEnabled, !self.accessibilityInitialFocusDone else {
+            return
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self, !self.accessibilityInitialFocusDone else {
+                return
+            }
+            let table = self.genericView.tableView
+            guard table.count > 0 else {
+                return
+            }
+            var unread: TableRowItem?
+            var lastMessage: TableRowItem?
+            for index in 0 ..< table.count {
+                let item = table.item(at: index)
+                if item is ChatUnreadRowItem {
+                    unread = item
+                    break
+                }
+            }
+            if unread == nil {
+                for index in stride(from: table.count - 1, through: 0, by: -1) {
+                    if let item = table.item(at: index) as? ChatRowItem, item.message != nil {
+                        lastMessage = item
+                        break
+                    }
+                }
+            }
+            guard let target = unread ?? lastMessage else {
+                return
+            }
+            self.accessibilityInitialFocusDone = true
+            if target.view == nil {
+                table.scroll(to: .top(id: target.stableId, innerId: nil, animated: false, focus: .init(focus: false), inset: 0))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self, weak table] in
+                    guard let table else {
+                        return
+                    }
+                    table.accessibilityFocus(item: target)
+                }
+            } else {
+                table.accessibilityFocus(item: target)
+            }
+        }
+    }
+
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        self.accessibilityFocusInitialRow()
 
         isPushedGlobalBackground = true
         updateBubblesBackButton()
