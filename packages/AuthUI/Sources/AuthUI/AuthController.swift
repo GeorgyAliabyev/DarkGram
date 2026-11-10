@@ -720,11 +720,7 @@ public class AuthController : GenericViewController<AuthView> {
                         return current
                     }
                 }, takeNext: { [weak self] value in
-                    if let window = self?.window {
-                        verifyAlert_button(for: window, information: strings().authLoginConfirmPhone(formatPhoneNumber(value)), ok: strings().alertYes, cancel: strings().alertNO, successHandler: { [weak self] _ in
-                            self?.sendCode(value, updateState: updateState)
-                        })
-                    }
+                    self?.sendCode(value, updateState: updateState)
                 }, loginWithPasskey: { [weak self] in
                     #if APP_STORE
                     if #available(macOS 12.0, *) {

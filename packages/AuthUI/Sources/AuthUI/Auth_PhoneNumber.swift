@@ -224,6 +224,7 @@ public final class Auth_PhoneNumberView : View {
             text = "please update your app"
         }
         errorLabel.state.set(.error(text))
+        authAnnounce(text)
     }
     
     public func update(_ locked: Bool, state: UnauthorizedAccountStateContents, countries: [Country], error: AuthorizationCodeRequestError?, qrEnabled: Bool, passkeyAvailable: Bool, animated: Bool, takeToken:@escaping()->Void, takeNext: @escaping(String)->Void, loginWithPasskey: @escaping()->Void) {
